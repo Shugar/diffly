@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Previefy - Git Preview</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="navigation">
+            <span class="nav-logo">Previefy</span>
+            <button class="nav-btn active" data-tab="diff">Changes</button>
+            <button class="nav-btn" data-tab="status">Status</button>
+            <button class="nav-btn" data-tab="history">History</button>
+        </nav>
+        
+        <main class="main-content">
+            <div id="loading" class="loading">Loading...</div>
+            
+            <div id="diff-tab" class="tab-content active">
+                <div class="diff-layout">
+                    <aside class="file-sidebar">
+                        <div class="sidebar-header">
+                            <h3>Changed Files</h3>
+                            <span id="file-count" class="file-count">0</span>
+                        </div>
+                        <div class="file-list" id="file-list">
+                            <!-- File navigation will be populated here -->
+                        </div>
+                    </aside>
+                    <main class="diff-main">
+                        <div id="diff-content" class="diff-container"></div>
+                    </main>
+                </div>
+            </div>
+            
+            <div id="status-tab" class="tab-content">
+                <h2>Repository Status</h2>
+                <div id="status-content"></div>
+            </div>
+            
+            <div id="history-tab" class="tab-content">
+                <h2>Commit History</h2>
+                <div id="history-content"></div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

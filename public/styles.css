@@ -1,0 +1,550 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: #0d1117;
+    color: #c9d1d9;
+    line-height: 1.5;
+}
+
+.container {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.navigation {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #30363d;
+    padding-bottom: 10px;
+}
+
+.nav-logo {
+    font-size: 18px;
+    font-weight: 600;
+    color: #58a6ff;
+    margin-right: 10px;
+}
+
+.nav-btn {
+    background: transparent;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.nav-btn:hover {
+    background: #21262d;
+}
+
+.nav-btn.active {
+    background: #238636;
+    border-color: #238636;
+    color: white;
+}
+
+.main-content {
+    min-height: 400px;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+    font-size: 1.2rem;
+    color: #58a6ff;
+}
+
+.diff-container {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.diff-file {
+    border-bottom: 1px solid #30363d;
+}
+
+.diff-file:last-child {
+    border-bottom: none;
+}
+
+.diff-file-header {
+    background: #21262d;
+    padding: 8px 16px;
+    font-weight: 600;
+    color: #f0f6fc;
+    border-bottom: 1px solid #30363d;
+}
+
+.diff-content {
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.diff-line {
+    padding: 2px 8px;
+    white-space: pre-wrap;
+    display: flex;
+}
+
+.diff-line-number {
+    width: 50px;
+    text-align: right;
+    padding-right: 10px;
+    color: #656d76;
+    user-select: none;
+}
+
+.diff-line-content {
+    flex: 1;
+}
+
+.diff-line.added {
+    background: #033a16;
+    color: #aff5b4;
+}
+
+.diff-line.removed {
+    background: #67060c;
+    color: #ffdcd7;
+}
+
+.diff-line.context {
+    background: transparent;
+    color: #c9d1d9;
+}
+
+.status-item {
+    padding: 10px;
+    margin-bottom: 10px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+}
+
+.status-category {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #f0f6fc;
+}
+
+.status-file {
+    padding: 4px 0;
+    font-family: 'SF Mono', Monaco, monospace;
+    font-size: 13px;
+}
+
+.status-modified { color: #d29922; }
+.status-added { color: #238636; }
+.status-deleted { color: #da3633; }
+.status-renamed { color: #a5a5a5; }
+
+.commit-item {
+    padding: 16px;
+    margin-bottom: 10px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+}
+
+.commit-hash {
+    font-family: 'SF Mono', Monaco, monospace;
+    font-size: 12px;
+    color: #58a6ff;
+    margin-bottom: 8px;
+}
+
+.commit-message {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #f0f6fc;
+}
+
+.commit-author {
+    font-size: 14px;
+    color: #8b949e;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #8b949e;
+}
+
+.error {
+    background: #67060c;
+    color: #ffdcd7;
+    padding: 16px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+
+/* Diff Layout with Sidebar */
+.diff-layout {
+    display: flex;
+    height: calc(100vh - 120px);
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #161b22;
+}
+
+.file-sidebar {
+    width: 280px;
+    background: #0d1117;
+    border-right: 1px solid #30363d;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    padding: 16px;
+    border-bottom: 1px solid #30363d;
+    background: #161b22;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sidebar-header h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #f0f6fc;
+}
+
+.file-count {
+    background: #21262d;
+    color: #8b949e;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.file-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+}
+
+.tree-folder,
+.tree-file {
+    padding: 4px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    border-left: 3px solid transparent;
+}
+
+.tree-folder:hover,
+.tree-file:hover {
+    background: #21262d;
+}
+
+.tree-file.active {
+    background: #1c2128;
+    border-left-color: #58a6ff;
+}
+
+.tree-folder {
+    font-weight: 500;
+    color: #c9d1d9;
+}
+
+.folder-icon {
+    font-size: 12px;
+}
+
+.folder-name {
+    color: #c9d1d9;
+}
+
+.file-icon {
+    font-size: 12px;
+    width: 12px;
+}
+
+.file-name {
+    font-family: 'SF Mono', Monaco, monospace;
+    font-size: 13px;
+    color: #c9d1d9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+.diff-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+/* Split Diff View */
+.diff-container {
+    flex: 1;
+    overflow: auto;
+    background: #0d1117;
+    border: none;
+    border-radius: 0;
+}
+
+.diff-file {
+    border-bottom: none;
+    margin-bottom: 24px;
+}
+
+.diff-file:last-child {
+    margin-bottom: 0;
+}
+
+.diff-file-header {
+    background: #21262d;
+    padding: 12px 16px;
+    font-weight: 600;
+    color: #f0f6fc;
+    border-bottom: 1px solid #30363d;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.file-path {
+    flex: 1;
+}
+
+.file-stats-header {
+    font-size: 12px;
+    font-weight: 500;
+    background: #0d1117;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: 'SF Mono', Monaco, monospace;
+}
+
+.file-stats-header .added {
+    color: #238636;
+}
+
+.file-stats-header .removed {
+    color: #da3633;
+}
+
+/* Deleted Files */
+.diff-file-deleted {
+    border: 1px solid #da3633;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.diff-file-header-deleted {
+    background: #67060c !important;
+    color: #ffdcd7;
+    border-bottom: 1px solid #da3633;
+}
+
+.file-deleted-badge {
+    background: #da3633;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+.diff-deleted-content {
+    background: #67060c;
+    padding: 40px;
+    text-align: center;
+    border-top: 1px solid #da3633;
+}
+
+.deleted-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    color: #ffdcd7;
+}
+
+.deleted-icon {
+    font-size: 48px;
+    opacity: 0.7;
+}
+
+.deleted-text {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+/* Empty content files */
+.diff-empty-content {
+    background: #161b22;
+    padding: 40px;
+    text-align: center;
+    border-top: 1px solid #30363d;
+}
+
+.empty-diff-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: #8b949e;
+}
+
+.empty-icon {
+    font-size: 36px;
+    opacity: 0.6;
+}
+
+.empty-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: #c9d1d9;
+}
+
+.empty-subtext {
+    font-size: 12px;
+    color: #8b949e;
+    max-width: 300px;
+}
+
+.diff-split-view {
+    display: flex;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.diff-side {
+    flex: 1;
+    min-width: 0;
+}
+
+.diff-side.old {
+    border-right: 1px solid #30363d;
+}
+
+.diff-split-line {
+    display: flex;
+    min-height: 20px;
+}
+
+.diff-line-number {
+    width: 50px;
+    text-align: right;
+    padding-right: 8px;
+    color: #656d76;
+    user-select: none;
+    background: #161b22;
+    border-right: 1px solid #30363d;
+    flex-shrink: 0;
+}
+
+.diff-line-content {
+    flex: 1;
+    padding-left: 8px;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.diff-split-line.added .diff-line-content {
+    background: #033a16;
+    color: #aff5b4;
+}
+
+.diff-split-line.removed .diff-line-content {
+    background: #67060c;
+    color: #ffdcd7;
+}
+
+.diff-split-line.context .diff-line-content {
+    background: transparent;
+    color: #c9d1d9;
+}
+
+.diff-split-line.empty {
+    background: #0d1117;
+}
+
+.diff-split-line.empty .diff-line-content {
+    background: #0d1117;
+}
+
+/* Scrollbar Styling */
+.file-list::-webkit-scrollbar,
+.diff-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.file-list::-webkit-scrollbar-track,
+.diff-container::-webkit-scrollbar-track {
+    background: #161b22;
+}
+
+.file-list::-webkit-scrollbar-thumb,
+.diff-container::-webkit-scrollbar-thumb {
+    background: #30363d;
+    border-radius: 4px;
+}
+
+.file-list::-webkit-scrollbar-thumb:hover,
+.diff-container::-webkit-scrollbar-thumb:hover {
+    background: #484f58;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .file-sidebar {
+        width: 240px;
+    }
+}
+
+@media (max-width: 768px) {
+    .diff-layout {
+        flex-direction: column;
+        height: auto;
+    }
+    
+    .file-sidebar {
+        width: 100%;
+        max-height: 200px;
+    }
+    
+    .diff-split-view {
+        flex-direction: column;
+    }
+    
+    .diff-side.old {
+        border-right: none;
+        border-bottom: 1px solid #30363d;
+    }
+}
