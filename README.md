@@ -4,13 +4,16 @@ A GitHub-like Git preview tool that opens repository diffs in your browser.
 
 ## Installation
 
-### Global Installation (Recommended)
+### Global Installation from NPM (Recommended)
 ```bash
-npm install -g .
+npm install -g diffly
 ```
 
-### Or run locally
+### Or install locally for development
 ```bash
+git clone https://github.com/shugar/diffly.git
+cd diffly
+npm install
 npm start
 ```
 
