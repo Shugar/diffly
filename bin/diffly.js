@@ -47,7 +47,16 @@ program
 
     app.get("/api/log", async (req, res) => {
       try {
-        const log = await git.log({ maxCount: 10 });
+        const log = await git.log({ 
+          maxCount: 10000,
+          format: {
+            hash: '%H',
+            date: '%ai',
+            message: '%s',
+            author_name: '%an',
+            author_email: '%ae'
+          }
+        });
         res.json(log);
       } catch (error) {
         res.status(500).json({ error: error.message });
@@ -58,8 +67,26 @@ program
       res.sendFile(path.join(__dirname, "../public/index.html"));
     });
 
-    const server = app.listen(options.port, async () => {
-      const url = `http://localhost:${options.port}`;
+    async function findAvailablePort(startPort) {
+      return new Promise((resolve) => {
+        const testServer = require('net').createServer();
+        testServer.listen(startPort, () => {
+          const port = testServer.address().port;
+          testServer.close(() => resolve(port));
+        });
+        testServer.on('error', () => {
+          resolve(findAvailablePort(startPort + 1));
+        });
+      });
+    }
+
+    const availablePort = await findAvailablePort(parseInt(options.port));
+    if (availablePort !== parseInt(options.port)) {
+      console.log(`Port ${options.port} is busy, using port ${availablePort} instead`);
+    }
+
+    const server = app.listen(availablePort, async () => {
+      const url = `http://localhost:${availablePort}`;
       console.log(`Diffly server running at ${url}`);
       console.log("Opening browser...");
       try {

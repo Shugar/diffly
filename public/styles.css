@@ -548,3 +548,15 @@ body {
         border-bottom: 1px solid #30363d;
     }
 }
+
+/* History Tab Specific Styles */
+#history-tab {
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+}
+
+#history-content {
+    padding: 16px;
+    max-height: calc(100vh - 180px);
+    overflow-y: auto;
+}

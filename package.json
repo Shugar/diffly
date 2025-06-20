@@ -2,7 +2,7 @@
   "name": "diffly",
   "version": "1.0.0",
   "description": "A GitHub-like Git preview tool that opens repository diffs in your browser",
-  "main": "index.js",
+  "main": "bin/diffly.js",
   "bin": {
     "diffly": "./bin/diffly.js"
   },
@@ -16,6 +16,11 @@
     "url": "https://github.com/shugar"
   },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Shugar/diffly"
+  },
+  "homepage": "https://github.com/Shugar/diffly",
   "dependencies": {
     "express": "^4.18.2",
     "simple-git": "^3.20.0",
