@@ -1,6 +1,6 @@
 {
   "name": "diffly",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A GitHub-like Git preview tool that opens repository diffs in your browser",
   "main": "bin/diffly.js",
   "bin": {
@@ -10,7 +10,18 @@
     "start": "node bin/diffly.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["git", "diff", "preview", "github", "cli", "diffly", "repository", "visualization", "browser", "tool"],
+  "keywords": [
+    "git",
+    "diff",
+    "preview",
+    "github",
+    "cli",
+    "diffly",
+    "repository",
+    "visualization",
+    "browser",
+    "tool"
+  ],
   "author": {
     "name": "shugar",
     "url": "https://github.com/shugar"
