@@ -2,7 +2,7 @@
 
 A GitHub-like Git preview tool that opens repository diffs in your browser.
 
-<img width="1726" alt="image" src="https://github.com/user-attachments/assets/e4cc7db2-f430-4042-bc72-1cff0ecf1554" />
+<img width="1728" alt="image" src="https://github.com/user-attachments/assets/fcaca68a-6231-41f5-8181-8f958777cf45" />
 
 
 ## Installation
