@@ -9,16 +9,17 @@ class GitPreview {
   init() {
     this.setupNavigation();
     this.setupFileNavigation();
-    this.loadInitialData();
+    requestAnimationFrame(() => this.loadInitialData());
   }
 
   setupNavigation() {
     const navButtons = document.querySelectorAll(".nav-btn");
+    const handleClick = (e) => {
+      const tab = e.target.dataset.tab;
+      this.switchTab(tab);
+    };
     navButtons.forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        const tab = e.target.dataset.tab;
-        this.switchTab(tab);
-      });
+      btn.addEventListener("click", handleClick, { passive: true });
     });
   }
 
@@ -54,21 +55,18 @@ class GitPreview {
   }
 
   async loadInitialData() {
-    this.showLoading();
     await this.loadDiff();
-    this.hideLoading();
   }
 
-  showLoading() {
-    document.getElementById("loading").style.display = "block";
-  }
 
-  hideLoading() {
-    document.getElementById("loading").style.display = "none";
+  showDiffLoading() {
+    const container = document.getElementById("diff-content");
+    container.innerHTML = '<div class="loading-content">Loading diff...</div>';
   }
 
   async loadDiff() {
     try {
+      this.showDiffLoading();
       const response = await fetch("/api/diff");
       const data = await response.json();
 
@@ -145,7 +143,7 @@ class GitPreview {
     const files = [];
     const lines = diffText.split("\n");
     let currentFile = null;
-    let currentHunk = [];
+    let currentHunk = null;
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -275,26 +273,38 @@ class GitPreview {
         if (node.type === "folder") {
           html += `
                     <div class="tree-folder" style="padding-left: ${
-                      level * 16
-                    }px">
-                        <span class="folder-icon">📁</span>
+                      level * 20
+                    }px; --level: ${level};" data-level="${level}">
+                        <div class="folder-toggle">
+                            <svg class="folder-arrow" width="16" height="16" viewBox="0 0 16 16">
+                                <path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"></path>
+                            </svg>
+                        </div>
+                        <svg class="icon-directory" aria-label="Directory" aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16">
+                            <path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"></path>
+                        </svg>
                         <span class="folder-name">${this.escapeHtml(key)}</span>
                     </div>
                 `;
+          html += `<div class="folder-contents" data-parent="${this.escapeHtml(key)}">`;
           html += this.renderFileTree(node.children, level + 1);
+          html += `</div>`;
         } else {
-          const icon = this.getFileIcon(node.file);
-          const stats = `+${node.file.addedLines} -${node.file.removedLines}`;
+          const fileIcon = this.getFileIcon(node.file);
+          const statusIcon = this.getStatusIcon(node.file);
           const isActive = node.index === this.currentFileIndex;
 
           html += `
                     <div class="tree-file ${
                       isActive ? "active" : ""
                     }" data-file-index="${node.index}" style="padding-left: ${
-            level * 16
-          }px">
-                        <span class="file-icon">${icon}</span>
-                        <span class="file-name">${this.escapeHtml(key)}</span>
+            level * 20 + 20
+          }px; --level: ${level};" data-level="${level}">
+                        <div class="file-info">
+                            ${fileIcon}
+                            <span class="file-name">${this.escapeHtml(key)}</span>
+                        </div>
+                        ${statusIcon ? statusIcon : ''}
                     </div>
                 `;
         }
@@ -314,28 +324,48 @@ class GitPreview {
 
     fileListContainer.innerHTML = treeHtml;
 
-    // Add click handlers for files
-    fileListContainer.querySelectorAll(".tree-file").forEach((item) => {
-      item.addEventListener("click", (e) => {
+    // Use event delegation for better performance
+    fileListContainer.addEventListener("click", (e) => {
+      if (e.target.closest(".tree-file")) {
         e.stopPropagation();
-        const fileIndex = parseInt(e.currentTarget.dataset.fileIndex);
+        const fileIndex = parseInt(e.target.closest(".tree-file").dataset.fileIndex);
         this.selectFileWithoutRerender(fileIndex);
-      });
-    });
-
-    // Add click handlers for folders (toggle)
-    fileListContainer.querySelectorAll(".tree-folder").forEach((folder) => {
-      folder.addEventListener("click", (e) => {
+      } else if (e.target.closest(".tree-folder")) {
         e.stopPropagation();
+        const folder = e.target.closest(".tree-folder");
         folder.classList.toggle("collapsed");
-      });
-    });
+        const folderName = folder.querySelector(".folder-name").textContent;
+        const contents = folder.nextElementSibling;
+        if (contents && contents.classList.contains("folder-contents")) {
+          contents.classList.toggle("hidden");
+        }
+      }
+    }, { passive: true });
   }
 
   getFileIcon(file) {
-    if (file.addedLines > 0 && file.removedLines === 0) return "+";
-    if (file.removedLines > 0 && file.addedLines === 0) return "−";
-    return "•";
+    return `<svg class="icon-file" aria-label="File" aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16">
+    <path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"></path>
+</svg>`;
+  }
+
+  getStatusIcon(file) {
+    if (file.addedLines > 0 && file.removedLines === 0) {
+      return `<svg class="icon-added" title="added" aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16">
+    <path d="M2.75 1h10.5c.966 0 1.75.784 1.75 1.75v10.5A1.75 1.75 0 0 1 13.25 15H2.75A1.75 1.75 0 0 1 1 13.25V2.75C1 1.784 1.784 1 2.75 1Zm10.5 1.5H2.75a.25.25 0 0 0-.25.25v10.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25V2.75a.25.25 0 0 0-.25-.25ZM8 4a.75.75 0 0 1 .75.75v2.5h2.5a.75.75 0 0 1 0 1.5h-2.5v2.5a.75.75 0 0 1-1.5 0v-2.5h-2.5a.75.75 0 0 1 0-1.5h2.5v-2.5A.75.75 0 0 1 8 4Z"></path>
+</svg>`;
+    }
+    if (file.removedLines > 0 && file.addedLines === 0) {
+      return `<svg class="icon-removed" title="removed" aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16">
+    <path d="M13.25 1c.966 0 1.75.784 1.75 1.75v10.5A1.75 1.75 0 0 1 13.25 15H2.75A1.75 1.75 0 0 1 1 13.25V2.75C1 1.784 1.784 1 2.75 1ZM2.75 2.5a.25.25 0 0 0-.25.25v10.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25V2.75a.25.25 0 0 0-.25-.25Zm8.5 6.25h-6.5a.75.75 0 0 1 0-1.5h6.5a.75.75 0 0 1 0 1.5Z"></path>
+</svg>`;
+    }
+    if (file.addedLines > 0 && file.removedLines > 0) {
+      return `<svg class="icon-modified" title="modified" aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16">
+    <path d="M13.25 1c.966 0 1.75.784 1.75 1.75v10.5A1.75 1.75 0 0 1 13.25 15H2.75A1.75 1.75 0 0 1 1 13.25V2.75C1 1.784 1.784 1 2.75 1ZM2.75 2.5a.25.25 0 0 0-.25.25v10.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25V2.75a.25.25 0 0 0-.25-.25ZM8 10a2 2 0 1 1-.001-3.999A2 2 0 0 1 8 10Z"></path>
+</svg>`;
+    }
+    return null;
   }
 
   selectFile(fileIndex) {
@@ -421,16 +451,22 @@ class GitPreview {
       return;
     }
 
-    const allFilesHtml = this.files
-      .map((file, index) => this.renderSplitDiffFile(file, index))
-      .join("");
+    // Use DocumentFragment for better performance
+    const fragment = document.createDocumentFragment();
+    this.files.forEach((file, index) => {
+      const div = document.createElement('div');
+      div.innerHTML = this.renderSplitDiffFile(file, index);
+      fragment.appendChild(div.firstElementChild);
+    });
 
-    container.innerHTML = allFilesHtml;
+    container.innerHTML = '';
+    container.appendChild(fragment);
   }
 
   renderSplitDiffFile(file, index) {
-    // Check if this is a deleted file - simplified logic
+    // Check if this is a deleted file or new file
     const isDeletedFile = file.addedLines === 0 && file.removedLines > 0;
+    const isNewFile = file.addedLines > 0 && file.removedLines === 0;
 
     if (isDeletedFile) {
       return `
@@ -452,6 +488,25 @@ class GitPreview {
                             <span class="deleted-text">This file was deleted</span>
                         </div>
                     </div>
+                </div>
+            `;
+    }
+
+    if (isNewFile) {
+      return `
+                <div class="diff-file diff-file-new" data-file="${
+                  file.name
+                }" data-file-index="${index}">
+                    <div class="diff-file-header diff-file-header-new">
+                        <span class="file-path">${this.escapeHtml(
+                          file.name
+                        )}</span>
+                        <span class="file-stats-header">
+                            <span class="file-new-badge">NEW</span>
+                            <span class="added">+${file.addedLines}</span>
+                        </span>
+                    </div>
+                    ${this.renderNewFileContent(file)}
                 </div>
             `;
     }
@@ -540,6 +595,20 @@ class GitPreview {
                 )}</span>
             </div>
         `;
+  }
+
+  renderNewFileContent(file) {
+    const hunkPairs = file.hunks.map((hunk) => this.renderSplitHunk(hunk));
+    const newSide = hunkPairs.map((pair) => pair.new).join("");
+
+    // For new files, we only show the new content side
+    return `
+                <div class="diff-split-view">
+                    <div class="diff-side new">
+                        ${newSide}
+                    </div>
+                </div>
+            `;
   }
 
   renderStatus(status) {
@@ -675,21 +744,24 @@ class GitPreview {
       }
     );
 
-    // Observe all file elements
-    setTimeout(() => {
+    // Observe all file elements with requestAnimationFrame
+    requestAnimationFrame(() => {
       document.querySelectorAll("[data-file-index]").forEach((fileElement) => {
         observer.observe(fileElement);
       });
-    }, 100);
+    });
 
     // Store observer to clean up later if needed
     this.scrollObserver = observer;
   }
 
   escapeHtml(text) {
-    const div = document.createElement("div");
-    div.textContent = text;
-    return div.innerHTML;
+    // Use a cached element for better performance
+    if (!this._escapeDiv) {
+      this._escapeDiv = document.createElement("div");
+    }
+    this._escapeDiv.textContent = text;
+    return this._escapeDiv.innerHTML;
   }
 }
 
