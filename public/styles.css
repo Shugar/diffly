@@ -248,6 +248,35 @@ body {
     align-items: center;
 }
 
+.sidebar-header-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.bulk-collapse-btn {
+    background: transparent;
+    border: 1px solid #30363d;
+    padding: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.bulk-collapse-btn:hover {
+    background-color: #21262d;
+    border-color: #484f58;
+}
+
+.bulk-collapse-btn svg {
+    fill: #8b949e;
+    width: 16px;
+    height: 16px;
+}
+
 .sidebar-header h3 {
     font-size: 14px;
     font-weight: 600;
@@ -266,6 +295,40 @@ body {
     flex: 1;
     overflow-y: auto;
     padding: 8px 0;
+}
+
+/* Diff filter controls */
+.diff-filter-controls {
+    display: flex;
+    padding: 8px;
+    gap: 4px;
+    border-bottom: 1px solid #30363d;
+    background: #0d1117;
+}
+
+.filter-btn {
+    flex: 1;
+    background: transparent;
+    border: 1px solid #30363d;
+    color: #8b949e;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+.filter-btn:hover {
+    background: #21262d;
+    border-color: #484f58;
+    color: #c9d1d9;
+}
+
+.filter-btn.active {
+    background: #238636;
+    border-color: #238636;
+    color: white;
 }
 
 .tree-folder,
@@ -429,6 +492,46 @@ body {
     align-items: center;
 }
 
+.file-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.file-collapse-toggle {
+    background: transparent;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.15s ease;
+}
+
+.file-collapse-toggle:hover {
+    background-color: #30363d;
+}
+
+.collapse-arrow {
+    fill: #8b949e;
+    transition: transform 0.15s ease;
+    transform: rotate(0deg);
+}
+
+.collapse-arrow.expanded {
+    transform: rotate(90deg);
+}
+
+/* Hide content when file is collapsed */
+.diff-file.collapsed .diff-split-view,
+.diff-file.collapsed .diff-deleted-content,
+.diff-file.collapsed .diff-empty-content {
+    display: none;
+}
+
 .file-path {
     flex: 1;
 }
@@ -448,6 +551,31 @@ body {
 
 .file-stats-header .removed {
     color: #da3633;
+}
+
+/* Stage indicators */
+.stage-indicator {
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-right: 8px;
+    text-transform: uppercase;
+}
+
+.stage-indicator.staged {
+    background: #238636;
+    color: white;
+}
+
+.stage-indicator.unstaged {
+    background: #d29922;
+    color: #0d1117;
+}
+
+.stage-indicator.mixed {
+    background: #58a6ff;
+    color: white;
 }
 
 /* New Files */
@@ -573,7 +701,8 @@ body {
 
 .diff-split-line {
     display: flex;
-    min-height: 20px;
+    height: 20px;
+    line-height: 20px;
     contain: layout style;
 }
 
@@ -586,6 +715,8 @@ body {
     background: #161b22;
     border-right: 1px solid #30363d;
     flex-shrink: 0;
+    line-height: 20px;
+    height: 20px;
 }
 
 .diff-line-content {
@@ -593,6 +724,8 @@ body {
     padding-left: 8px;
     white-space: pre-wrap;
     word-break: break-all;
+    line-height: 20px;
+    min-height: 20px;
 }
 
 .diff-split-line.added .diff-line-content {

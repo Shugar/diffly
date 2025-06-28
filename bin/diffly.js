@@ -42,8 +42,8 @@ program
         const status = await git.status();
         
         // Get diff for modified files and staged files
-        const [modifiedDiff, stagedDiff] = await Promise.all([
-          git.diff(["--no-prefix"]), // Modified files
+        const [unstagedDiff, stagedDiff] = await Promise.all([
+          git.diff(["--no-prefix"]), // Unstaged/modified files
           git.diff(["--no-prefix", "--cached"]) // Staged files
         ]);
         
@@ -52,19 +52,11 @@ program
         if (status.not_added && status.not_added.length > 0) {
           for (const file of status.not_added) {
             try {
-              const content = await git.show([`HEAD:${file}`]).catch(() => {
-                // If file doesn't exist in HEAD, read from filesystem
-                const fs = require('fs');
-                const path = require('path');
-                try {
-                  return fs.readFileSync(path.join(process.cwd(), file), 'utf8');
-                } catch {
-                  return '';
-                }
-              });
+              // Read untracked file content from filesystem
+              const fileContent = fs.readFileSync(path.join(process.cwd(), file), 'utf8');
               
               // Create a fake diff showing the entire file as new
-              const lines = content.split('\n');
+              const lines = fileContent.split('\n');
               untrackedDiffs += `diff --git ${file} ${file}\n`;
               untrackedDiffs += `new file mode 100644\n`;
               untrackedDiffs += `index 0000000..${Math.random().toString(36).substr(2, 7)}\n`;
@@ -81,9 +73,14 @@ program
           }
         }
         
-        // Combine all diffs
-        const combinedDiff = [modifiedDiff, stagedDiff, untrackedDiffs].filter(Boolean).join('\n');
-        res.json({ diff: combinedDiff });
+        // Return separate diffs for staged and unstaged
+        res.json({ 
+          staged: stagedDiff,
+          unstaged: unstagedDiff,
+          untracked: untrackedDiffs,
+          // Also send combined for backward compatibility
+          diff: [unstagedDiff, stagedDiff, untrackedDiffs].filter(Boolean).join('\n')
+        });
       } catch (error) {
         res.status(500).json({ error: error.message });
       }

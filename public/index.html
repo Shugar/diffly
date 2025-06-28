@@ -23,7 +23,24 @@
                     <aside class="file-sidebar">
                         <div class="sidebar-header">
                             <h3>Changed Files</h3>
-                            <span id="file-count" class="file-count">0</span>
+                            <div class="sidebar-header-controls">
+                                <button class="bulk-collapse-btn" id="collapse-all-btn" title="Collapse all files">
+                                    <svg width="16" height="16" viewBox="0 0 16 16">
+                                        <path d="M3.75 2h8.5c.966 0 1.75.784 1.75 1.75v8.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2Zm7.03 6.53-3.25 3.25a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734l3.25-3.25a.749.749 0 0 1 1.06 0Z"/>
+                                    </svg>
+                                </button>
+                                <button class="bulk-collapse-btn" id="expand-all-btn" title="Expand all files">
+                                    <svg width="16" height="16" viewBox="0 0 16 16">
+                                        <path d="M3.75 2h8.5c.966 0 1.75.784 1.75 1.75v8.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2Zm3.72 6.53 3.25-3.25a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734l-3.25 3.25a.749.749 0 0 1-1.06 0Z"/>
+                                    </svg>
+                                </button>
+                                <span id="file-count" class="file-count">0</span>
+                            </div>
+                        </div>
+                        <div class="diff-filter-controls">
+                            <button class="filter-btn active" data-filter="all">All</button>
+                            <button class="filter-btn" data-filter="staged">Staged</button>
+                            <button class="filter-btn" data-filter="unstaged">Unstaged</button>
                         </div>
                         <div class="file-list" id="file-list">
                             <!-- File navigation will be populated here -->

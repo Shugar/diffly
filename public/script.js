@@ -3,12 +3,18 @@ class GitPreview {
     this.currentFile = null;
     this.currentFileIndex = 0;
     this.files = [];
+    this.stagedFiles = [];
+    this.unstagedFiles = [];
+    this.collapsedFiles = new Set(); // Track collapsed files
+    this.diffFilter = 'all'; // 'all', 'staged', 'unstaged'
     this.init();
   }
 
   init() {
+    this.loadCollapseState();
     this.setupNavigation();
     this.setupFileNavigation();
+    this.setupDiffFilters();
     requestAnimationFrame(() => this.loadInitialData());
   }
 
@@ -75,7 +81,22 @@ class GitPreview {
         return;
       }
 
-      this.renderDiff(data.diff);
+      // Process staged and unstaged diffs separately
+      if (data.staged || data.unstaged || data.untracked) {
+        this.stagedFiles = this.parseDiff(data.staged || '');
+        const unstagedFiles = this.parseDiff((data.unstaged || '') + '\n' + (data.untracked || ''));
+        this.unstagedFiles = unstagedFiles;
+        
+        // Mark files as staged or unstaged
+        this.stagedFiles.forEach(file => file.isStaged = true);
+        this.unstagedFiles.forEach(file => file.isStaged = false);
+        
+        // Combine based on filter
+        this.updateFilesBasedOnFilter();
+      } else {
+        // Fallback for backward compatibility
+        this.renderDiff(data.diff);
+      }
     } catch (error) {
       this.showError("diff-content", "Failed to load diff: " + error.message);
     }
@@ -461,23 +482,44 @@ class GitPreview {
 
     container.innerHTML = '';
     container.appendChild(fragment);
+    
+    // Add event listeners for collapse toggles
+    this.setupCollapseToggles();
   }
 
   renderSplitDiffFile(file, index) {
     // Check if this is a deleted file or new file
     const isDeletedFile = file.addedLines === 0 && file.removedLines > 0;
     const isNewFile = file.addedLines > 0 && file.removedLines === 0;
+    
+    // Build stage indicators
+    let stageIndicators = '';
+    if (file.hasStaged && file.hasUnstaged) {
+      stageIndicators = '<span class="stage-indicator mixed">Mixed</span>';
+    } else if (file.isStaged || file.hasStaged) {
+      stageIndicators = '<span class="stage-indicator staged">Staged</span>';
+    } else {
+      stageIndicators = '<span class="stage-indicator unstaged">Unstaged</span>';
+    }
 
     if (isDeletedFile) {
       return `
-                <div class="diff-file diff-file-deleted" data-file="${
+                <div class="diff-file diff-file-deleted ${this.collapsedFiles.has(file.name) ? 'collapsed' : ''}" data-file="${
                   file.name
                 }" data-file-index="${index}">
-                    <div class="diff-file-header diff-file-header-deleted">
-                        <span class="file-path">${this.escapeHtml(
-                          file.name
-                        )}</span>
+                    <div class="diff-file-header diff-file-header-deleted" data-file-name="${file.name}">
+                        <div class="file-header-left">
+                            <button class="file-collapse-toggle" aria-label="${this.collapsedFiles.has(file.name) ? 'Expand' : 'Collapse'} file">
+                                <svg class="collapse-arrow ${this.collapsedFiles.has(file.name) ? '' : 'expanded'}" width="16" height="16" viewBox="0 0 16 16">
+                                    <path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"></path>
+                                </svg>
+                            </button>
+                            <span class="file-path">${this.escapeHtml(
+                              file.name
+                            )}</span>
+                        </div>
                         <span class="file-stats-header">
+                            ${stageIndicators}
                             <span class="file-deleted-badge">DELETED</span>
                             <span class="removed">-${file.removedLines}</span>
                         </span>
@@ -494,14 +536,22 @@ class GitPreview {
 
     if (isNewFile) {
       return `
-                <div class="diff-file diff-file-new" data-file="${
+                <div class="diff-file diff-file-new ${this.collapsedFiles.has(file.name) ? 'collapsed' : ''}" data-file="${
                   file.name
                 }" data-file-index="${index}">
-                    <div class="diff-file-header diff-file-header-new">
-                        <span class="file-path">${this.escapeHtml(
-                          file.name
-                        )}</span>
+                    <div class="diff-file-header diff-file-header-new" data-file-name="${file.name}">
+                        <div class="file-header-left">
+                            <button class="file-collapse-toggle" aria-label="${this.collapsedFiles.has(file.name) ? 'Expand' : 'Collapse'} file">
+                                <svg class="collapse-arrow ${this.collapsedFiles.has(file.name) ? '' : 'expanded'}" width="16" height="16" viewBox="0 0 16 16">
+                                    <path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"></path>
+                                </svg>
+                            </button>
+                            <span class="file-path">${this.escapeHtml(
+                              file.name
+                            )}</span>
+                        </div>
                         <span class="file-stats-header">
+                            ${stageIndicators}
                             <span class="file-new-badge">NEW</span>
                             <span class="added">+${file.addedLines}</span>
                         </span>
@@ -519,12 +569,20 @@ class GitPreview {
     const hasContent = oldSide.trim() || newSide.trim();
 
     return `
-            <div class="diff-file" data-file="${
+            <div class="diff-file ${this.collapsedFiles.has(file.name) ? 'collapsed' : ''}" data-file="${
               file.name
             }" data-file-index="${index}">
-                <div class="diff-file-header">
-                    <span class="file-path">${this.escapeHtml(file.name)}</span>
+                <div class="diff-file-header" data-file-name="${file.name}">
+                    <div class="file-header-left">
+                        <button class="file-collapse-toggle" aria-label="${this.collapsedFiles.has(file.name) ? 'Expand' : 'Collapse'} file">
+                            <svg class="collapse-arrow ${this.collapsedFiles.has(file.name) ? '' : 'expanded'}" width="16" height="16" viewBox="0 0 16 16">
+                                <path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"></path>
+                            </svg>
+                        </button>
+                        <span class="file-path">${this.escapeHtml(file.name)}</span>
+                    </div>
                     <span class="file-stats-header">
+                        ${stageIndicators}
                         <span class="added">+${file.addedLines}</span> 
                         <span class="removed">-${file.removedLines}</span>
                     </span>
@@ -562,23 +620,64 @@ class GitPreview {
 
     let oldLineNum = hunk.oldStart;
     let newLineNum = hunk.newStart;
+    let result = [];
+
+    // Process lines sequentially and build pairs
+    let i = 0;
+    while (i < hunk.lines.length) {
+      const line = hunk.lines[i];
+      
+      if (line.type === "context") {
+        // Context lines are shown on both sides
+        result.push({
+          old: { lineNum: oldLineNum++, content: line.content, type: "context" },
+          new: { lineNum: newLineNum++, content: line.content, type: "context" }
+        });
+        i++;
+      } else {
+        // Collect all consecutive removed lines
+        let removedLines = [];
+        while (i < hunk.lines.length && hunk.lines[i].type === "removed") {
+          removedLines.push(hunk.lines[i]);
+          i++;
+        }
+        
+        // Collect all consecutive added lines
+        let addedLines = [];
+        while (i < hunk.lines.length && hunk.lines[i].type === "added") {
+          addedLines.push(hunk.lines[i]);
+          i++;
+        }
+        
+        // Pair removed and added lines
+        const maxLength = Math.max(removedLines.length, addedLines.length);
+        for (let idx = 0; idx < maxLength; idx++) {
+          const removedLine = removedLines[idx];
+          const addedLine = addedLines[idx];
+          
+          result.push({
+            old: removedLine ? { lineNum: oldLineNum++, content: removedLine.content, type: "removed" } : null,
+            new: addedLine ? { lineNum: newLineNum++, content: addedLine.content, type: "added" } : null
+          });
+        }
+      }
+    }
+
+    // Build the HTML
     let oldSide = "";
     let newSide = "";
-
-    for (const line of hunk.lines) {
-      if (line.type === "context") {
-        oldSide += this.renderSplitLine(oldLineNum, line.content, "context");
-        newSide += this.renderSplitLine(newLineNum, line.content, "context");
-        oldLineNum++;
-        newLineNum++;
-      } else if (line.type === "removed") {
-        oldSide += this.renderSplitLine(oldLineNum, line.content, "removed");
-        newSide += this.renderSplitLine("", "", "empty");
-        oldLineNum++;
-      } else if (line.type === "added") {
+    
+    for (const pair of result) {
+      if (pair.old) {
+        oldSide += this.renderSplitLine(pair.old.lineNum, pair.old.content, pair.old.type);
+      } else {
         oldSide += this.renderSplitLine("", "", "empty");
-        newSide += this.renderSplitLine(newLineNum, line.content, "added");
-        newLineNum++;
+      }
+      
+      if (pair.new) {
+        newSide += this.renderSplitLine(pair.new.lineNum, pair.new.content, pair.new.type);
+      } else {
+        newSide += this.renderSplitLine("", "", "empty");
       }
     }
 
@@ -762,6 +861,177 @@ class GitPreview {
     }
     this._escapeDiv.textContent = text;
     return this._escapeDiv.innerHTML;
+  }
+
+  setupCollapseToggles() {
+    const container = document.getElementById("diff-content");
+    container.addEventListener("click", (e) => {
+      const toggle = e.target.closest(".file-collapse-toggle");
+      if (toggle) {
+        e.preventDefault();
+        e.stopPropagation();
+        const header = toggle.closest(".diff-file-header");
+        const fileName = header.dataset.fileName;
+        if (fileName) {
+          this.toggleFileCollapse(fileName);
+        }
+      }
+    }, { passive: false });
+    
+    // Setup bulk collapse/expand buttons
+    const collapseAllBtn = document.getElementById("collapse-all-btn");
+    const expandAllBtn = document.getElementById("expand-all-btn");
+    
+    if (collapseAllBtn) {
+      collapseAllBtn.addEventListener("click", () => this.collapseAllFiles());
+    }
+    
+    if (expandAllBtn) {
+      expandAllBtn.addEventListener("click", () => this.expandAllFiles());
+    }
+  }
+
+  toggleFileCollapse(fileName) {
+    if (this.collapsedFiles.has(fileName)) {
+      this.collapsedFiles.delete(fileName);
+    } else {
+      this.collapsedFiles.add(fileName);
+    }
+    
+    // Update the UI for this specific file
+    const fileElement = document.querySelector(`[data-file="${fileName}"]`);
+    if (fileElement) {
+      fileElement.classList.toggle('collapsed');
+      
+      // Update the arrow icon
+      const arrow = fileElement.querySelector('.collapse-arrow');
+      if (arrow) {
+        arrow.classList.toggle('expanded');
+      }
+      
+      // Update aria-label
+      const toggle = fileElement.querySelector('.file-collapse-toggle');
+      if (toggle) {
+        toggle.setAttribute('aria-label', this.collapsedFiles.has(fileName) ? 'Expand file' : 'Collapse file');
+      }
+    }
+    
+    // Save state to localStorage
+    this.saveCollapseState();
+  }
+
+  saveCollapseState() {
+    localStorage.setItem('diffly-collapsed-files', JSON.stringify([...this.collapsedFiles]));
+  }
+
+  loadCollapseState() {
+    try {
+      const saved = localStorage.getItem('diffly-collapsed-files');
+      if (saved) {
+        this.collapsedFiles = new Set(JSON.parse(saved));
+      }
+    } catch (e) {
+      // Ignore errors
+    }
+  }
+
+  collapseAllFiles() {
+    // Add all file names to collapsedFiles
+    this.files.forEach(file => {
+      this.collapsedFiles.add(file.name);
+    });
+    
+    // Update all file elements
+    document.querySelectorAll('.diff-file').forEach(fileElement => {
+      fileElement.classList.add('collapsed');
+      const arrow = fileElement.querySelector('.collapse-arrow');
+      if (arrow) {
+        arrow.classList.remove('expanded');
+      }
+      const toggle = fileElement.querySelector('.file-collapse-toggle');
+      if (toggle) {
+        toggle.setAttribute('aria-label', 'Expand file');
+      }
+    });
+    
+    this.saveCollapseState();
+  }
+
+  expandAllFiles() {
+    // Clear all collapsed files
+    this.collapsedFiles.clear();
+    
+    // Update all file elements
+    document.querySelectorAll('.diff-file').forEach(fileElement => {
+      fileElement.classList.remove('collapsed');
+      const arrow = fileElement.querySelector('.collapse-arrow');
+      if (arrow) {
+        arrow.classList.add('expanded');
+      }
+      const toggle = fileElement.querySelector('.file-collapse-toggle');
+      if (toggle) {
+        toggle.setAttribute('aria-label', 'Collapse file');
+      }
+    });
+    
+    this.saveCollapseState();
+  }
+
+  updateFilesBasedOnFilter() {
+    let filesToShow = [];
+    
+    switch (this.diffFilter) {
+      case 'staged':
+        filesToShow = [...this.stagedFiles];
+        break;
+      case 'unstaged':
+        filesToShow = [...this.unstagedFiles];
+        break;
+      case 'all':
+      default:
+        // Combine and deduplicate files
+        const fileMap = new Map();
+        
+        // Add staged files first
+        this.stagedFiles.forEach(file => {
+          fileMap.set(file.name, { ...file, hasStaged: true, hasUnstaged: false });
+        });
+        
+        // Add or merge unstaged files
+        this.unstagedFiles.forEach(file => {
+          if (fileMap.has(file.name)) {
+            fileMap.get(file.name).hasUnstaged = true;
+          } else {
+            fileMap.set(file.name, { ...file, hasStaged: false, hasUnstaged: true });
+          }
+        });
+        
+        filesToShow = Array.from(fileMap.values());
+    }
+    
+    this.files = filesToShow;
+    this.renderFileList();
+    this.renderAllFiles();
+    this.setupScrollObserver();
+  }
+
+  setupDiffFilters() {
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const filter = e.target.dataset.filter;
+        if (filter && filter !== this.diffFilter) {
+          this.diffFilter = filter;
+          
+          // Update active state
+          filterButtons.forEach(b => b.classList.remove('active'));
+          e.target.classList.add('active');
+          
+          // Update the files display
+          this.updateFilesBasedOnFilter();
+        }
+      });
+    });
   }
 }
 
