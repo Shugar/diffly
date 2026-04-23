@@ -11,6 +11,7 @@ program
   .description("Preview Git repository in a GitHub-like interface")
   .version("1.0.0")
   .option("-p, --port <port>", "port to run the server on", "3000")
+  .option("-b, --base <ref>", "compare HEAD against a base ref (e.g. main, origin/main, abc1234)")
   .action(async (options) => {
     const currentDir = process.cwd();
     const gitDir = path.join(currentDir, ".git");
@@ -20,7 +21,11 @@ program
       process.exit(1);
     }
 
-    console.log("Starting Diffly server...");
+    if (options.base) {
+      console.log(`Starting Diffly server (comparing HEAD against ${options.base})...`);
+    } else {
+      console.log("Starting Diffly server...");
+    }
 
     const app = express();
     const git = simpleGit(currentDir);
@@ -38,15 +43,27 @@ program
 
     app.get("/api/diff", async (req, res) => {
       try {
+        if (options.base) {
+          const baseDiff = await git.diff(["--no-prefix", `${options.base}...HEAD`]);
+          res.json({
+            staged: '',
+            unstaged: baseDiff,
+            untracked: '',
+            diff: baseDiff,
+            base: options.base
+          });
+          return;
+        }
+
         // Get status to identify new/untracked files
         const status = await git.status();
-        
+
         // Get diff for modified files and staged files
         const [unstagedDiff, stagedDiff] = await Promise.all([
           git.diff(["--no-prefix"]), // Unstaged/modified files
           git.diff(["--no-prefix", "--cached"]) // Staged files
         ]);
-        
+
         // Create pseudo-diffs for untracked files
         let untrackedDiffs = '';
         if (status.not_added && status.not_added.length > 0) {
@@ -54,7 +71,7 @@ program
             try {
               // Read untracked file content from filesystem
               const fileContent = fs.readFileSync(path.join(process.cwd(), file), 'utf8');
-              
+
               // Create a fake diff showing the entire file as new
               const lines = fileContent.split('\n');
               untrackedDiffs += `diff --git ${file} ${file}\n`;
@@ -72,9 +89,9 @@ program
             }
           }
         }
-        
+
         // Return separate diffs for staged and unstaged
-        res.json({ 
+        res.json({
           staged: stagedDiff,
           unstaged: unstagedDiff,
           untracked: untrackedDiffs,
